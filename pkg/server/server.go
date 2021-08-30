@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ferama/vipien/pkg/util"
 	"github.com/gorilla/websocket"
 	"github.com/songgao/water"
 	"github.com/songgao/water/waterutil"
@@ -37,11 +38,12 @@ func tun2ws(iface *water.Interface, hub *Hub) {
 		for k := range hub.clients {
 			k.WriteMessage(websocket.BinaryMessage, buffer)
 		}
-		// srcAddr, dstAddr := netutil.GetAddr(b)
+		srcAddr, dstAddr := util.GetAddr(b)
 		// if srcAddr == "" || dstAddr == "" {
 		// 	continue
 		// }
-		// key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
+		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
+		log.Println(key)
 		// v, ok := c.Get(key)
 		// if ok {
 		// 	b = cipher.XOR(b)

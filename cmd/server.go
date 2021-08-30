@@ -14,7 +14,6 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "server",
 	Long:  "server",
-	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		iface := tun.CreateTun("172.16.0.1/24")
 
