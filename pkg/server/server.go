@@ -35,20 +35,52 @@ func tun2ws(iface *water.Interface, hub *Hub) {
 		if !waterutil.IsIPv4(b) {
 			continue
 		}
-		for k := range hub.clients {
-			k.WriteMessage(websocket.BinaryMessage, buffer)
-		}
+
 		srcAddr, dstAddr := util.GetAddr(b)
-		// if srcAddr == "" || dstAddr == "" {
-		// 	continue
+		if srcAddr == "" || dstAddr == "" {
+			continue
+		}
+
+		// for _, v := range hub.clients {
+		// 	v.WriteMessage(websocket.BinaryMessage, buffer)
 		// }
 		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
 		log.Println(key)
-		// v, ok := c.Get(key)
-		// if ok {
-		// 	b = cipher.XOR(b)
-		// 	v.(*websocket.Conn).WriteMessage(websocket.BinaryMessage, b)
-		// }
+		if conn, ok := hub.clients[key]; ok {
+			conn.WriteMessage(websocket.BinaryMessage, buffer)
+		}
+	}
+}
+
+func ws2tun(iface *water.Interface, ws *websocket.Conn, hub *Hub) {
+	key := ""
+	defer func() {
+		if key != "" {
+			hub.unregister <- &hubItem{
+				key:  key,
+				conn: ws,
+			}
+		}
+	}()
+	for {
+		ws.SetReadDeadline(time.Now().Add(time.Duration(30) * time.Second))
+		_, b, err := ws.ReadMessage()
+		if err != nil || err == io.EOF {
+			break
+		}
+		if !waterutil.IsIPv4(b) {
+			continue
+		}
+		srcAddr, dstAddr := util.GetAddr(b)
+		if srcAddr == "" || dstAddr == "" {
+			continue
+		}
+		key = fmt.Sprintf("%v->%v", srcAddr, dstAddr)
+		hub.register <- &hubItem{
+			key:  key,
+			conn: ws,
+		}
+		iface.Write(b[:])
 	}
 }
 
@@ -69,30 +101,11 @@ func Run(addr string, iface *water.Interface) {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
-		hub.register <- ws
-		defer func() {
-			hub.unregister <- ws
-		}()
 
 		if err != nil {
 			return
 		}
-		for {
-			ws.SetReadDeadline(time.Now().Add(time.Duration(30) * time.Second))
-			_, b, err := ws.ReadMessage()
-			if err != nil || err == io.EOF {
-				break
-			}
-			if !waterutil.IsIPv4(b) {
-				continue
-			}
-			// srcAddr, dstAddr := util.GetAddr(b)
-			// fmt.Printf("%v->%v", dstAddr, srcAddr)
-			// if srcAddr == "" || dstAddr == "" {
-			// 	continue
-			// }
-			iface.Write(b[:])
-		}
+		ws2tun(iface, ws, hub)
 	})
 
 	log.Println("Listening on", addr)

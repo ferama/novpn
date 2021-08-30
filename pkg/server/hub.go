@@ -1,22 +1,29 @@
 package server
 
-import "github.com/gorilla/websocket"
+import (
+	"github.com/gorilla/websocket"
+)
+
+type hubItem struct {
+	key  string
+	conn *websocket.Conn
+}
 
 type Hub struct {
 	// Registered clients.
-	clients map[*websocket.Conn]bool
+	clients map[string]*websocket.Conn
 	// Register requests from the clients.
-	register chan *websocket.Conn
+	register chan *hubItem
 
 	// Unregister requests from clients.
-	unregister chan *websocket.Conn
+	unregister chan *hubItem
 }
 
 func newHub() *Hub {
 	return &Hub{
-		clients:    make(map[*websocket.Conn]bool),
-		register:   make(chan *websocket.Conn),
-		unregister: make(chan *websocket.Conn),
+		clients:    make(map[string]*websocket.Conn),
+		register:   make(chan *hubItem),
+		unregister: make(chan *hubItem),
 	}
 }
 
@@ -24,9 +31,11 @@ func (h *Hub) run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.clients[client] = true
+			// log.Println("register ", client.key)
+			h.clients[client.key] = client.conn
 		case client := <-h.unregister:
-			delete(h.clients, client)
+			// log.Println("unregister ", client.key)
+			delete(h.clients, client.key)
 		}
 	}
 }

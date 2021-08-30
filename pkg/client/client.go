@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -34,7 +33,7 @@ func (c *Client) Start() {
 	}
 	iface := tun.CreateTun("172.16.0.2/24")
 	go c.tun2ws(iface, ws)
-	// ws.WriteMessage(websocket.BinaryMessage, []byte("Hello"))
+	// ws.WriteMessage(websocket.BinaryMessage, []byte("Hello12345"))
 	c.ws2tun(iface, ws)
 }
 
@@ -48,6 +47,10 @@ func (c *Client) tun2ws(iface *water.Interface, ws *websocket.Conn) {
 		}
 		b := buffer[:n]
 		if !waterutil.IsIPv4(b) {
+			continue
+		}
+		srcAddr, dstAddr := util.GetAddr(b)
+		if srcAddr == "" || dstAddr == "" {
 			continue
 		}
 		ws.WriteMessage(websocket.BinaryMessage, buffer)
@@ -64,11 +67,6 @@ func (c *Client) ws2tun(iface *water.Interface, ws *websocket.Conn) {
 		if !waterutil.IsIPv4(b) {
 			continue
 		}
-		srcAddr, dstAddr := util.GetAddr(b)
-		fmt.Printf("%v->%v\n", dstAddr, srcAddr)
-		// if srcAddr == "" || dstAddr == "" {
-		// 	continue
-		// }
 		iface.Write(b[:])
 	}
 }
