@@ -23,11 +23,27 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func tun2ws(iface *water.Interface, hub *Hub) {
+type Server struct {
+	hub   *Hub
+	iface *water.Interface
+}
+
+func New(iface *water.Interface) *Server {
+	s := &Server{
+		iface: iface,
+		hub:   newHub(),
+	}
+
+	go s.hub.run()
+
+	return s
+}
+
+func (s *Server) tun2ws() {
 	buffer := make([]byte, 1500)
 
 	for {
-		n, err := iface.Read(buffer)
+		n, err := s.iface.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
@@ -46,17 +62,17 @@ func tun2ws(iface *water.Interface, hub *Hub) {
 		// }
 		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
 		log.Println(key)
-		if conn, ok := hub.clients[key]; ok {
+		if conn, ok := s.hub.clients[key]; ok {
 			conn.WriteMessage(websocket.BinaryMessage, buffer)
 		}
 	}
 }
 
-func ws2tun(iface *water.Interface, ws *websocket.Conn, hub *Hub) {
+func (s *Server) ws2tun(ws *websocket.Conn) {
 	key := ""
 	defer func() {
 		if key != "" {
-			hub.unregister <- &hubItem{
+			s.hub.unregister <- &hubItem{
 				key:  key,
 				conn: ws,
 			}
@@ -76,19 +92,16 @@ func ws2tun(iface *water.Interface, ws *websocket.Conn, hub *Hub) {
 			continue
 		}
 		key = fmt.Sprintf("%v->%v", srcAddr, dstAddr)
-		hub.register <- &hubItem{
+		s.hub.register <- &hubItem{
 			key:  key,
 			conn: ws,
 		}
-		iface.Write(b[:])
+		s.iface.Write(b[:])
 	}
 }
 
-func Run(addr string, iface *water.Interface) {
-
-	hub := newHub()
-	go hub.run()
-	go tun2ws(iface, hub)
+func (s *Server) Run(addr string) {
+	go s.tun2ws()
 
 	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
 		ip := req.Header.Get("X-Forwarded-For")
@@ -105,7 +118,7 @@ func Run(addr string, iface *water.Interface) {
 		if err != nil {
 			return
 		}
-		ws2tun(iface, ws, hub)
+		s.ws2tun(ws)
 	})
 
 	log.Println("Listening on", addr)

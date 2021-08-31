@@ -17,6 +17,7 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		iface := tun.CreateTun("172.16.0.1/24")
 
-		server.Run("0.0.0.0:8800", iface)
+		server := server.New(iface)
+		server.Run("0.0.0.0:8800")
 	},
 }

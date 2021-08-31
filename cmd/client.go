@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/ferama/vipien/pkg/client"
+	"github.com/ferama/vipien/pkg/tun"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,9 @@ var clientCmd = &cobra.Command{
 	Long:  "client",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := client.New(args[0])
+		iface := tun.CreateTun("172.16.0.2/24")
+
+		client := client.New(args[0], iface)
 		client.Start()
 	},
 }
