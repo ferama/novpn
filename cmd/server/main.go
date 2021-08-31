@@ -1,14 +1,10 @@
-package cmd
+package main
 
 import (
 	"github.com/ferama/vipien/pkg/server"
 	"github.com/ferama/vipien/pkg/tun"
 	"github.com/spf13/cobra"
 )
-
-func init() {
-	rootCmd.AddCommand(serverCmd)
-}
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -20,4 +16,8 @@ var serverCmd = &cobra.Command{
 		server := server.New(iface)
 		server.Run("0.0.0.0:8800")
 	},
+}
+
+func main() {
+	serverCmd.Execute()
 }

@@ -17,18 +17,21 @@ build() {
     [[ $GOOS = "windows" ]] && EXT=".exe"
     echo "Building ${GOOS} ${GOARCH}"
     go build \
-        -ldflags="-s -w -X 'github.com/ferama/vipien/cmd.Version=$VERSION'" \
-        -o ./bin/vipien-${GOOS}-${GOARCH}${EXT} .
+        -o ./bin/vipien-${GOOS}-${GOARCH}${EXT} \
+        ./cmd/client
+    
+    if [[ $GOOS = "linux" ]]; then
+        go build \
+            -o ./bin/vipien-server-${GOOS}-${GOARCH}${EXT} \
+            ./cmd/server
+    fi
 }
 
 ### test units
 go test ./... -v -cover -race || exit 1
 
 ### multi arch binary build
-GOOS=linux GOARCH=arm build
-GOOS=linux GOARCH=arm64 build
 GOOS=linux GOARCH=amd64 build
-
 GOOS=darwin GOARCH=arm64 build
 
-GOOS=windows GOARCH=amd64 build
+# GOOS=windows GOARCH=amd64 build

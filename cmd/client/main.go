@@ -1,14 +1,10 @@
-package cmd
+package main
 
 import (
 	"github.com/ferama/vipien/pkg/client"
 	"github.com/ferama/vipien/pkg/tun"
 	"github.com/spf13/cobra"
 )
-
-func init() {
-	rootCmd.AddCommand(clientCmd)
-}
 
 var clientCmd = &cobra.Command{
 	Use:   "client [ws|wss]://server:port",
@@ -21,4 +17,8 @@ var clientCmd = &cobra.Command{
 		client := client.New(args[0], iface)
 		client.Start()
 	},
+}
+
+func main() {
+	clientCmd.Execute()
 }
