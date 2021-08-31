@@ -30,7 +30,6 @@ func New(url string, iface *water.Interface) *Client {
 }
 
 func (c *Client) Start() {
-
 	c.wsReady.Add(1)
 	go c.tun2ws()
 	for {
@@ -40,12 +39,13 @@ func (c *Client) Start() {
 		ws, _, err := websocket.DefaultDialer.Dial(c.url, header)
 		c.ws = ws
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		c.wsReady.Done()
 		// ws.WriteMessage(websocket.BinaryMessage, []byte("Hello12345"))
 		c.ws2tun()
-
 		c.wsReady.Add(1)
 	}
 }

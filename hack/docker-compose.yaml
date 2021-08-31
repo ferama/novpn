@@ -3,8 +3,14 @@
 # echo 1 > /proc/sys/net/ipv4/ip_forward
 
 ### On client
-# 172.25.0.0/16 is the intra containers network
-# sudo route -n add -net 172.25.0.0/16 172.16.0.1
+# 172.21.0.0/16 is the intra containers network
+# sudo route -n add -net 172.21.0.0/16 172.16.0.1
+
+### sample conf on osx
+# sudo route -n delete -net 172.21.0.0/16 172.16.0.1
+# sudo route -n add -net 172.21.0.0/16 172.16.0.1
+# networksetup -setdnsservers Wi-Fi 8.8.8.8,172.21.0.10
+
 version: "3.9"
 services:
   rospo:
