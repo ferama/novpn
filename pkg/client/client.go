@@ -2,11 +2,11 @@ package client
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/ferama/vipien/pkg/iface"
 	"github.com/ferama/vipien/pkg/util"
 	"github.com/gorilla/websocket"
 	"github.com/songgao/water"
@@ -14,17 +14,17 @@ import (
 )
 
 type Client struct {
-	url   string
-	ws    *websocket.Conn
-	iface *water.Interface
+	url string
+	ws  *websocket.Conn
+	tun *water.Interface
 
 	wsReady sync.WaitGroup
 }
 
-func New(url string, iface *water.Interface) *Client {
+func New(url string, iface *iface.IFace) *Client {
 	c := &Client{
-		url:   url,
-		iface: iface,
+		url: url,
+		tun: iface.Tun,
 	}
 	return c
 }
@@ -35,11 +35,11 @@ func (c *Client) Start() {
 	for {
 		// header := http.Header{"X-Api-Key": []string{"test_api_key"}}
 		header := make(http.Header)
-		log.Println("dialing into", c.url)
+		// log.Println("dialing into", c.url)
 		ws, _, err := websocket.DefaultDialer.Dial(c.url, header)
 		c.ws = ws
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -54,7 +54,7 @@ func (c *Client) tun2ws() {
 	buffer := make([]byte, 1500)
 
 	for {
-		n, err := c.iface.Read(buffer)
+		n, err := c.tun.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
@@ -81,6 +81,6 @@ func (c *Client) ws2tun() {
 		if !waterutil.IsIPv4(b) {
 			continue
 		}
-		c.iface.Write(b[:])
+		c.tun.Write(b[:])
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ferama/vipien/pkg/iface"
 	"github.com/ferama/vipien/pkg/util"
 	"github.com/gorilla/websocket"
 	"github.com/songgao/water"
@@ -24,17 +25,15 @@ var upgrader = websocket.Upgrader{
 }
 
 type Server struct {
-	hub   *Hub
-	iface *water.Interface
+	registry *Registry
+	tun      *water.Interface
 }
 
-func New(iface *water.Interface) *Server {
+func New(iface *iface.IFace) *Server {
 	s := &Server{
-		iface: iface,
-		hub:   newHub(),
+		tun:      iface.Tun,
+		registry: NewRegistry(),
 	}
-
-	go s.hub.run()
 
 	return s
 }
@@ -43,7 +42,7 @@ func (s *Server) tun2ws() {
 	buffer := make([]byte, 1500)
 
 	for {
-		n, err := s.iface.Read(buffer)
+		n, err := s.tun.Read(buffer)
 		if err != nil || err == io.EOF || n == 0 {
 			continue
 		}
@@ -62,7 +61,7 @@ func (s *Server) tun2ws() {
 		// }
 		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
 		log.Println(key)
-		if conn, ok := s.hub.clients[key]; ok {
+		if conn, err := s.registry.GetByKey(key); err == nil {
 			conn.WriteMessage(websocket.BinaryMessage, buffer)
 		}
 	}
@@ -72,10 +71,7 @@ func (s *Server) ws2tun(ws *websocket.Conn) {
 	key := ""
 	defer func() {
 		if key != "" {
-			s.hub.unregister <- &hubItem{
-				key:  key,
-				conn: ws,
-			}
+			s.registry.Delete(key)
 		}
 	}()
 	for {
@@ -92,11 +88,8 @@ func (s *Server) ws2tun(ws *websocket.Conn) {
 			continue
 		}
 		key = fmt.Sprintf("%v->%v", srcAddr, dstAddr)
-		s.hub.register <- &hubItem{
-			key:  key,
-			conn: ws,
-		}
-		s.iface.Write(b[:])
+		s.registry.Add(key, ws)
+		s.tun.Write(b[:])
 	}
 }
 

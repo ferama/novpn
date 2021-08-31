@@ -28,7 +28,7 @@ build() {
 }
 
 ### test units
-go test ./... -v -cover -race || exit 1
+# go test ./... -v -cover -race || exit 1
 
 ### multi arch binary build
 GOOS=linux GOARCH=amd64 build
