@@ -56,11 +56,8 @@ func (s *Server) tun2ws() {
 			continue
 		}
 
-		// for _, v := range hub.clients {
-		// 	v.WriteMessage(websocket.BinaryMessage, buffer)
-		// }
 		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
-		log.Println(key)
+		log.Println(fmt.Sprintf("%v->%v", srcAddr, dstAddr))
 		if conn, err := s.registry.GetByKey(key); err == nil {
 			conn.WriteMessage(websocket.BinaryMessage, buffer)
 		}
@@ -88,6 +85,7 @@ func (s *Server) ws2tun(ws *websocket.Conn) {
 			continue
 		}
 		key = fmt.Sprintf("%v->%v", srcAddr, dstAddr)
+		log.Println(key)
 		s.registry.Add(key, ws)
 		s.tun.Write(b[:])
 	}
@@ -114,6 +112,6 @@ func (s *Server) Run(addr string) {
 		s.ws2tun(ws)
 	})
 
-	log.Println("Listening on", addr)
+	log.Println("listening on", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

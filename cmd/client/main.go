@@ -19,14 +19,15 @@ var clientCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tun := tun.CreateTun()
 		iface := iface.New(tun)
+		gateway := "172.16.0.1"
 		iface.Setup("172.16.0.2/24")
-		iface.AddRoute("172.21.0.0/16", "172.16.0.1")
+		iface.AddRoute("172.21.0.0/16", gateway)
 		iface.SetupDns([]string{
 			"8.8.8.8",
 			"172.21.0.10",
 		})
 
-		client := client.New(args[0], iface)
+		client := client.New(args[0], iface, gateway)
 		go client.Start()
 
 		c := make(chan os.Signal, 1)
