@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+func ExecCmdWithOutput(cmd string) string {
+	if path, found := FindCommand("sh"); found {
+		out, err := exec.Command(path, "-c", cmd).Output()
+		if err != nil {
+			return fmt.Sprintf("Failed to execute command: %s", cmd)
+		}
+		ret := string(out)
+		ret = strings.Replace(ret, "\n", "", -1)
+		return ret
+	}
+	log.Fatalf("unsupported")
+	return ""
+}
+
 func ExecCmd(cmdline string) {
 	parts := strings.Split(cmdline, " ")
 	cmd := exec.Command(parts[0], parts[1:]...)

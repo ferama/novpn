@@ -37,6 +37,12 @@ func setupDns(dns []string) {
 	if list == "" {
 		list = "Empty"
 	}
-	cmd := fmt.Sprintf("/usr/sbin/networksetup -setdnsservers Wi-Fi %s", list)
+
+	cmd := "/sbin/route get google.com | grep interface | awk '{print $2}'"
+	eth := util.ExecCmdWithOutput(cmd)
+	cmd = fmt.Sprintf("networksetup -listnetworkserviceorder | grep %s | awk '{print substr($3, 1, length($3) - 1)}'", eth)
+	hwName := util.ExecCmdWithOutput(cmd)
+
+	cmd = fmt.Sprintf("/usr/sbin/networksetup -setdnsservers %s %s", hwName, list)
 	util.ExecCmd(cmd)
 }
