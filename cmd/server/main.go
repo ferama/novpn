@@ -18,10 +18,13 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tun := tun.CreateTun()
 		iface := iface.New(tun)
-		iface.Setup("172.16.0.1/24")
+
+		ipAddr := "172.16.0.1/24"
+
+		iface.Setup(ipAddr)
 		iface.Masquerade()
 
-		server := server.New(iface)
+		server := server.New(iface, ipAddr)
 		go server.Run("0.0.0.0:8800")
 
 		c := make(chan os.Signal, 1)

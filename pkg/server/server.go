@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -26,14 +27,29 @@ var upgrader = websocket.Upgrader{
 type Server struct {
 	registry *Registry
 	tun      *water.Interface
+
+	pool *ipPool
 }
 
-func New(iface *iface.IFace) *Server {
+func New(iface *iface.IFace, ipAddr string) *Server {
 	s := &Server{
 		tun:      iface.Tun,
 		registry: NewRegistry(),
 	}
 
+	_, subnet, err := net.ParseCIDR(ipAddr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	s.pool = newIpPool(subnet)
+
+	// n, _ := s.pool.next()
+	// log.Println("==", n)
+	// n, _ = s.pool.next()
+	// log.Println("==", n)
+	// s.pool.relase(n.IP)
+	// n, _ = s.pool.next()
+	// log.Println("==", n)
 	return s
 }
 
