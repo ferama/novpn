@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/ferama/vipien/pkg/iface"
@@ -94,14 +93,7 @@ func (s *Server) ws2tun(ws *websocket.Conn) {
 func (s *Server) Run(addr string) {
 	go s.tun2ws()
 
-	http.HandleFunc("/ip", func(w http.ResponseWriter, req *http.Request) {
-		ip := req.Header.Get("X-Forwarded-For")
-		if ip == "" {
-			ip = strings.Split(req.RemoteAddr, ":")[0]
-		}
-		resp := fmt.Sprintf("%v", ip)
-		io.WriteString(w, resp)
-	})
+	http.HandleFunc("/ip", ipRoute)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
