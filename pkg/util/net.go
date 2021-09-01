@@ -3,43 +3,62 @@ package util
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
-	"os/exec"
-	"strings"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/songgao/water/waterutil"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 )
 
-func ExecCmd(cmdline string) {
-	parts := strings.Split(cmdline, " ")
-	cmd := exec.Command(parts[0], parts[1:]...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-	err := cmd.Run()
+func Ping(addr string) (time.Duration, error) {
+	conn, err := icmp.ListenPacket("ip4:icmp", "0.0.0.0")
 	if err != nil {
-		log.Fatalln("failed to exec", parts[0], err)
+		return 0, err
 	}
-}
+	defer conn.Close()
+	m := icmp.Message{
+		Type: ipv4.ICMPTypeEcho, Code: 0,
+		Body: &icmp.Echo{
+			ID:   os.Getpid() & 0xffff,
+			Seq:  1,
+			Data: []byte(""),
+		},
+	}
+	b, _ := m.Marshal(nil)
+	dst, _ := net.ResolveIPAddr("ip", addr)
 
-func FindCommand(cmd string) (string, bool) {
-	paths := []string{
-		fmt.Sprintf("/bin/%s", cmd),
-		fmt.Sprintf("/sbin/%s", cmd),
-		fmt.Sprintf("/usr/bin/%s", cmd),
-		fmt.Sprintf("/usr/sbin/%s", cmd),
-		fmt.Sprintf("/usr/local/bin/%s", cmd),
-		fmt.Sprintf("/usr/local/sbin/%s", cmd),
+	start := time.Now()
+	if _, err = conn.WriteTo(b, dst); err != nil {
+		return 0, err
 	}
-	for _, path := range paths {
-		_, err := exec.LookPath(path)
-		if err == nil {
-			return path, true
-		}
+
+	reply := make([]byte, 1500)
+	err = conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	if err != nil {
+		return 0, err
 	}
-	return "", false
+	n, peer, err := conn.ReadFrom(reply)
+	if err != nil {
+		return 0, err
+	}
+	duration := time.Since(start)
+
+	const ProtocolICMP = 1
+	rm, err := icmp.ParseMessage(ProtocolICMP, reply[:n])
+	if err != nil {
+		return 0, err
+	}
+
+	switch rm.Type {
+	case ipv4.ICMPTypeEchoReply:
+		return duration, nil
+	default:
+		return 0, fmt.Errorf("got %+v from %v; want echo reply", rm, peer)
+	}
 }
 
 func GetPort(b []byte) (srcPort string, dstPort string) {

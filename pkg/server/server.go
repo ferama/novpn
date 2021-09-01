@@ -57,7 +57,7 @@ func (s *Server) tun2ws() {
 		}
 
 		key := fmt.Sprintf("%v->%v", dstAddr, srcAddr)
-		log.Println(fmt.Sprintf("%v->%v", srcAddr, dstAddr))
+		log.Println(fmt.Sprintf("#S# %v->%v", srcAddr, dstAddr))
 		if conn, err := s.registry.GetByKey(key); err == nil {
 			conn.WriteMessage(websocket.BinaryMessage, buffer)
 		}
@@ -85,7 +85,7 @@ func (s *Server) ws2tun(ws *websocket.Conn) {
 			continue
 		}
 		key = fmt.Sprintf("%v->%v", srcAddr, dstAddr)
-		log.Println(key)
+		log.Println(fmt.Sprintf("*C* %v->%v", srcAddr, dstAddr))
 		s.registry.Add(key, ws)
 		s.tun.Write(b[:])
 	}

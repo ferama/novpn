@@ -18,6 +18,7 @@ var clientCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		tun := tun.CreateTun()
+
 		iface := iface.New(tun)
 		gateway := "172.16.0.1"
 		iface.Setup("172.16.0.2/24")
