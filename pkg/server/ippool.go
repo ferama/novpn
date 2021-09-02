@@ -9,10 +9,17 @@ import (
 
 type ipPool struct {
 	subnet *net.IPNet
-	pool   [254]int32
+	pool   [255]int32
 }
 
 func newIpPool(subnet *net.IPNet) *ipPool {
+	if subnet.Mask[0] != byte(255) ||
+		subnet.Mask[1] != byte(255) ||
+		subnet.Mask[2] != byte(255) ||
+		subnet.Mask[3] != byte(0) {
+		log.Fatal("unsupported netmask")
+	}
+
 	return &ipPool{
 		subnet: subnet,
 	}
